@@ -15,7 +15,8 @@ Operating System Migration 操作系统迁移，目前支持 WINDOWS操作系统
 
 ## 作者
 - ** 梁芝纲 / LIANG ZHI GANG
-- GitHub: [https://github.com/zhangsan/netdd](https://github.com/zhangsan/netdd)
+- GitHub: https://github.com/hangzhouminghe88/OSMigration/
+- 开始编写时间： 2025年3月26日开始
 
 ## 使用示例
 ```
