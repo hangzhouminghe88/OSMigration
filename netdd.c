@@ -12,13 +12,10 @@
 #define LOG_FILE   "/netdd.txt"
 
 static uint64_t sequNum = 1;
+static uint64_t totalBytesWritten =0;     
 
-void logMessage(const char *message) {
-	FILE *logFile = fopen(LOG_FILE, "a");
-	if (logFile) {
-		fprintf(logFile, "%s\n", message);
-		fclose(logFile);
-	}
+void logMessage(const char *msg) {
+    fprintf(stderr, "[progress] %s\n", msg);
 }
 
 int recvLength(int fd, int sock_conn, size_t RecvLen) {
@@ -39,7 +36,7 @@ int recvLength(int fd, int sock_conn, size_t RecvLen) {
 		}
 	}
 
-	// ´¦ÀíÈ«\0Êı¾İ£¬ÒÆ¶¯ÎÄ¼şÖ¸Õë
+	// å¤„ç†å…¨\0æ•°æ®ï¼Œç§»åŠ¨æ–‡ä»¶æŒ‡é’ˆ
 	if (sequNum < atol(sRecvBuffer)) {
 		lseek(fd, BYTES_63K * (atol(sRecvBuffer) - sequNum), SEEK_CUR);
 	}
@@ -60,6 +57,13 @@ int recvLength(int fd, int sock_conn, size_t RecvLen) {
 		}
 		return 1;
 	}
+	
+	// æ¯æ¥æ”¶ 100MBï¼Œæ‰“å°ä¸€æ¬¡è¿›åº¦
+	if (totalBytesWritten / (100 * 1024 * 1024) > ((totalBytesWritten - BYTES_63K) / (100 * 1024 * 1024))) {
+		char logbuf[128];
+		snprintf(logbuf, sizeof(logbuf), "å·²æ¥æ”¶æ•°æ®æ€»é‡ï¼š%.2f MB", totalBytesWritten / (1024.0 * 1024));
+		logMessage(logbuf);
+	}
 
 	return 1;
 }
@@ -70,12 +74,12 @@ int main(int argc, char *argv[]) {
 		exit(EXIT_FAILURE);
 	}
 
-	// ÏÔÊ¾´ÅÅÌÉè±¸Â·¾¶
+	// æ˜¾ç¤ºç£ç›˜è®¾å¤‡è·¯å¾„
 	printf("Disk device path: %s\n", argv[2]);
 	printf("Do you want to zero the disk? (YES/yes to confirm): ");
 
-	char confirm[5] = { 0 }; // Ôö¼Óµ½5¸ö×Ö·û
-	scanf("%3s", confirm); // ¶ÁÈ¡×î¶à3¸ö×Ö·û
+	char confirm[5] = { 0 }; // å¢åŠ åˆ°5ä¸ªå­—ç¬¦
+	scanf("%3s", confirm); // è¯»å–æœ€å¤š3ä¸ªå­—ç¬¦
 	if (strcmp(confirm, "YES") == 0 || strcmp(confirm, "yes") == 0) {
 		printf("Zeroing the disk...\n");
 		int disk_fd = open(argv[2], O_WRONLY);
