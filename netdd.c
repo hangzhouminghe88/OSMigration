@@ -7,7 +7,8 @@
 	  然后接收数据，直接写入到主盘，重新启动就是一台WINDOWS机器（跟源主机一样）
           碰到一个 VIRTO问题
           ./netdd 12332 /dev/vda  
- * 作者: Liang zhigang 
+ * 作者: Jiang  Hang
+         Liang  zhigang 梁芝纲 
  * 日期: 2025-03-26
  *
  * 本程序是自由软件；你可以遵照 GNU 通用公共许可证（GPL v3）来修改和重新发布它。
