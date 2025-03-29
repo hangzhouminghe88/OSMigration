@@ -1,6 +1,8 @@
 /*
- * osSend.cpp - 网络磁盘镜像发送工具
- * 功能：  从本地读取 img文件 ，然后发送到网络接收端 => netdd.c 
+ * osSend.cpp - 网络磁盘镜像 发送工具
+ * 功能：  
+         从本地读取 img文件 ，然后发送到网络接收端 => netdd.c
+	 目前只支持 WINDOWS客户端
  * 作者:  Jiang Hang
           Liang zhigang 
  * 日期: 2025-03-26
