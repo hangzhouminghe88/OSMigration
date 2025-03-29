@@ -22,7 +22,6 @@
 #define BYTES_1K   1024
 #define BYTES_63K  64512
 #define BYTES_64K  65536
-#define LOG_FILE   "/netdd.txt"
 
 static uint64_t sequNum = 1;
 static uint64_t totalBytesWritten =0;     
@@ -88,8 +87,8 @@ int main(int argc, char *argv[]) {
 	}
 
 	// 显示磁盘设备路径
-	printf("Disk device path: %s\n", argv[2]);
-	printf("Do you want to zero the disk? (YES/yes to confirm): ");
+	Fprintf(stderr,"Disk device path: %s\n", argv[2]);
+	fprintf(stderr,"Do you want to zero the disk? (YES/yes to confirm): ");
 
 	char confirm[5] = { 0 }; // 增加到5个字符
 	scanf("%3s", confirm); // 读取最多3个字符
@@ -104,9 +103,6 @@ int main(int argc, char *argv[]) {
 		while (write(disk_fd, buffer, BYTES_64K) == BYTES_64K);
 		close(disk_fd);
 		printf("Disk zeroing complete\n");
-	}
-	else {
-		printf("Disk zeroing canceled\n");
 	}
 
 	logMessage("netdd receive service started.....");
@@ -163,9 +159,9 @@ int main(int argc, char *argv[]) {
 
 	logMessage("Started receiving data.....");
 
-	sequNum = 1;
+	sequNum = 1;  // SEQ NUMBER 从 1开始 ，与发送端 对应
 	while (recvLength(fd, sock_conn, BYTES_64K));
-
+	
 	logMessage("Data reception completed");
 
 	close(sock_conn);
