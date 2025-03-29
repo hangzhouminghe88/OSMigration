@@ -1,3 +1,17 @@
+/*
+ * osSend.cpp - 网络磁盘镜像发送工具
+ * 功能：  从本地读取 img文件 ，然后发送到网络接收端 => netdd.c 
+ * 作者:  Jiang Hang
+          Liang zhigang 
+ * 日期: 2025-03-26
+ *
+ * 本程序是自由软件；你可以遵照 GNU 通用公共许可证（GPL v3）来修改和重新发布它。
+ * 本程序是基于“原样”提供的，没有任何担保，包括适销性和适用于特定目的的隐含担保。
+ *
+ * 你应该已经收到了一份 GNU 通用公共许可证的副本。
+ * 如果没有，请查看：https://www.gnu.org/licenses/gpl-3.0.html
+ */
+
 #include <stdio.h>
 #include <stdlib.h>
 #include <winsock2.h>
@@ -12,7 +26,7 @@
 #define MAX_DISK_NAME_LENGTH  128
 #define MAX_IMG_PATH_LENGTH   512
 #define MAX_RETRIES 5
-#define RETRY_DELAY 6000 // 6 seconds
+#define RETRY_DELAY 6000           // 6 seconds
 
 void DisplayLocalTime() {
 	time_t  local_time;
