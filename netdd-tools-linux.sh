@@ -1,8 +1,9 @@
 #!/bin/bash
 
 # netdd-tools-linux.sh
-# 多功能 Linux 快照 + netdd 辅助工具脚本
-# 作者：你自己（支持 /dev/sdX、loop 镜像、LVM、任意块设备）
+# 多功能  Linux 快照 + netdd 辅助工具脚本
+# 作者：  Liang Zhi Gang
+# （支持 /dev/sdX、loop 镜像、LVM、任意块设备）
 
 set -e
 
