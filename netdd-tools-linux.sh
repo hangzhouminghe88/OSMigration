@@ -5,6 +5,12 @@
 # 作者：  Liang Zhi Gang
 # （支持 /dev/sdX、loop 镜像、LVM、任意块设备）
 
+#  执行完脚本后 ，可以执行 3条语句看是否有残留
+#  losetup -a
+#  dmsetup ls
+#  ls /tmp/netdd_cow_*.img
+
+
 set -e
 
 # ---------- 参数 ----------
@@ -27,6 +33,18 @@ COW_LOOP=""
 echo "[*] 获取扇区数量..."
 SECTORS=$(blockdev --getsz "$ORIG_DEV")
 echo "    原始设备大小: $SECTORS 扇区"
+
+# 自动尝试卸载和删除已有 snapshot
+if dmsetup info "$SNAP_NAME" &>/dev/null; then
+  echo "[!] 发现旧快照 $SNAP_NAME，正在清理..."
+  dmsetup remove "$SNAP_NAME"
+fi
+
+# 自动释放 loop 占用
+if losetup "$COW_LOOP" &>/dev/null; then
+  echo "[!] 释放已占用的 loop 设备 $COW_LOOP"
+  losetup -d "$COW_LOOP"
+fi
 
 echo "[*] 创建临时 COW 文件 (512MB)..."
 dd if=/dev/zero of="$COW_FILE" bs=1M count=512 status=none
