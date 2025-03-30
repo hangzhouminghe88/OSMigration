@@ -1,11 +1,13 @@
+
 // netdd_send.cpp （跨平台版）
 // 支持 Windows 和 Linux，自动跳过零块，支持网络发送或本地写入镜像
-// 作者：Liang Zhi Gang，重构版本，已函数化 
+// 作者：Liang Zhi Gang，重构版本，已函数化 + 注释
 
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 #include <time.h>
+#include <stdbool.h>
 
 #ifdef _WIN32
 #include <winsock2.h>
@@ -26,6 +28,9 @@
 #include <netinet/in.h>
 #include <sys/types.h>
 #include <sys/stat.h>
+#include <sys/ioctl.h>
+#include <linux/fs.h>
+
 #define INVALID_SOCKET -1
 #define SOCKET_ERROR -1
 #define CLOSESOCKET close
@@ -92,6 +97,7 @@ SOCKET_TYPE connectServer(const char *ip, unsigned port) {
     return INVALID_SOCKET;
 }
 
+
 long long getDiskSize(const char *diskPath) {
 #ifdef _WIN32
     HANDLE h = OPEN_DISK(diskPath);
@@ -105,11 +111,18 @@ long long getDiskSize(const char *diskPath) {
     CLOSE_DISK(h);
     return lenInfo.Length.QuadPart;
 #else
-    struct stat st;
-    if (stat(diskPath, &st) < 0) return -1;
-    return st.st_size;
+    int fd = open(diskPath, O_RDONLY);
+    if (fd < 0) return -1;
+    unsigned long long size = 0;
+    if (ioctl(fd, BLKGETSIZE64, &size) < 0) {
+        close(fd);
+        return -1;
+    }
+    close(fd);
+    return size;
 #endif
 }
+
 
 int main(int argc, char *argv[]) {
     char diskPath[256], ip[64], imgPath[512];
