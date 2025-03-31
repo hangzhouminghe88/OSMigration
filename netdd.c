@@ -1,5 +1,5 @@
 /*
- * netdd - 网络磁盘镜像接收工具
+ * netdd.c - 网络磁盘镜像接收工具 ( SOCKET 服务端）
  * 功能：
           接收网络上传来的磁盘镜像数据，然后写入 LINUX盘中
 	  这个代码在 RESCUE CD 9.0 和 ZSTACK 4.0 测试通过
@@ -17,7 +17,6 @@
  * 你应该已经收到了一份 GNU 通用公共许可证的副本。
  * 如果没有，请查看：https://www.gnu.org/licenses/gpl-3.0.html
  */
-
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -31,52 +30,52 @@
 #define BYTES_64K  65536
 
 static uint64_t sequNum = 1;
-static uint64_t totalBytesWritten =0;     
+static uint64_t totalBytesWritten =0;
 
 void logMessage(const char *msg) {
-    fprintf(stderr, "[progress] %s\n", msg);
+    fprintf(stderr, "[LOG] %s\n", msg);
 }
 
 int recvLength(int fd, int sock_conn, size_t RecvLen) {
 	char sRecvBuffer[BYTES_64K] = { 0 };
-	int RealRecvLen = 0, AlreadyReadLen = 0;
+	int AlreadyReadLen = 0;
+	ssize_t RealRecvLen;
 
-	while (1) {
-		RealRecvLen = recv(sock_conn, sRecvBuffer + AlreadyReadLen, RecvLen, 0);
-		if (RealRecvLen == RecvLen) {
-			break;
-		}
-		else if (RealRecvLen == 0) {
-			return 0;
-		}
-		else {
-			RecvLen -= RealRecvLen;
-			AlreadyReadLen += RealRecvLen;
-		}
+	// 循环接收直到收满 RecvLen 字节
+	while (AlreadyReadLen < RecvLen) {
+		RealRecvLen = recv(sock_conn, sRecvBuffer + AlreadyReadLen, RecvLen - AlreadyReadLen, 0);
+		if (RealRecvLen <= 0) return 0;
+		AlreadyReadLen += RealRecvLen;
 	}
 
-	// 处理全\0数据，移动文件指针
-	if (sequNum < atol(sRecvBuffer)) {
-		lseek(fd, BYTES_63K * (atol(sRecvBuffer) - sequNum), SEEK_CUR);
+	// 提取当前块号
+	long currentSeq = atol(sRecvBuffer);
+	if (sequNum < currentSeq) {
+		lseek(fd, BYTES_63K * (currentSeq - sequNum), SEEK_CUR);
 	}
-	sequNum = atol(sRecvBuffer) + 1;
+	sequNum = currentSeq + 1;
 
-	if (sRecvBuffer[BYTES_1K - 5] == '\0') { // Not the last block of data
-		if (!write(fd, sRecvBuffer + BYTES_1K, BYTES_63K)) {
+	// 判断是否是最后一块
+	if (sRecvBuffer[BYTES_1K - 5] == '\0') {
+		ssize_t wlen = write(fd, sRecvBuffer + BYTES_1K, BYTES_63K);
+		if (wlen != BYTES_63K) {
 			logMessage("Failed to write data block");
 			return 0;
 		}
-	}
-	else { // Last block of data
-		char lastlen[64] = { 0 };
+		totalBytesWritten += wlen;
+	} else {
+		char lastlen[6] = {0};
 		memcpy(lastlen, sRecvBuffer + BYTES_1K - 5, 5);
-		if (!write(fd, sRecvBuffer + BYTES_1K, atol(lastlen))) {
-			logMessage("Failed to write the last data block");
+		size_t lastSize = atol(lastlen);
+
+		ssize_t wlen = write(fd, sRecvBuffer + BYTES_1K, lastSize);
+		if (wlen != lastSize) {
+			logMessage("Failed to write last data block");
 			return 0;
 		}
-		return 1;
+		totalBytesWritten += wlen;
 	}
-	
+
 	// 每接收 100MB，打印一次进度
 	if (totalBytesWritten / (100 * 1024 * 1024) > ((totalBytesWritten - BYTES_63K) / (100 * 1024 * 1024))) {
 		char logbuf[128];
@@ -94,13 +93,13 @@ int main(int argc, char *argv[]) {
 	}
 
 	// 显示磁盘设备路径
-	Fprintf(stderr,"Disk device path: %s\n", argv[2]);
-	fprintf(stderr,"Do you want to zero the disk? (YES/yes to confirm): ");
+	fprintf(stderr,"Disk device path: %s\n", argv[2]);
+	fprintf(stderr,"Do you want to zero the disk? (YES/yes to confirm,else skip): ");
 
-	char confirm[5] = { 0 }; // 增加到5个字符
-	scanf("%3s", confirm); // 读取最多3个字符
+	char confirm[5] = { 0 };  // 增加到5个字符
+	scanf("%3s", confirm);    // 读取最多3个字符
 	if (strcmp(confirm, "YES") == 0 || strcmp(confirm, "yes") == 0) {
-		printf("Zeroing the disk...\n");
+		fprintf(stderr,"Zeroing the disk...\n");
 		int disk_fd = open(argv[2], O_WRONLY);
 		if (disk_fd == -1) {
 			perror("Failed to open disk device");
@@ -109,7 +108,7 @@ int main(int argc, char *argv[]) {
 		char buffer[BYTES_64K] = { 0 }; // 64K zero-byte buffer
 		while (write(disk_fd, buffer, BYTES_64K) == BYTES_64K);
 		close(disk_fd);
-		printf("Disk zeroing complete\n");
+		fprintf(stderr,"Disk zeroing complete\n");
 	}
 
 	logMessage("netdd receive service started.....");
@@ -166,9 +165,9 @@ int main(int argc, char *argv[]) {
 
 	logMessage("Started receiving data.....");
 
-	sequNum = 1;  // SEQ NUMBER 从 1开始 ，与发送端 对应
+	sequNum = 1;
 	while (recvLength(fd, sock_conn, BYTES_64K));
-	
+
 	logMessage("Data reception completed");
 
 	close(sock_conn);
